@@ -590,7 +590,7 @@
     saveConfig();
     closeSettings();
     setupAutoRefresh();
-    fetchSheet();
+    await fetchSheet();
   }
 
   /* =========================================================
