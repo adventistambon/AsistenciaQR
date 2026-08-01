@@ -577,7 +577,7 @@
   function closeSettings() {
     dom.settingsOverlay.hidden = true;
   }
-  function saveSettings() {
+  async function saveSettings() {
     const sheetId = dom.cfgSheetId.value.trim();
     if (!sheetId) {
       dom.settingsError.textContent = "Ingresa el ID de la hoja de cálculo.";
