@@ -410,3 +410,6 @@ td.mono, .codigo-cell{ font-family: var(--font-mono); font-size: 12.5px; }
   .kpis{ grid-template-columns: 1fr; }
   .filters__actions{ margin-left:0; width:100%; }
 }
+.modal-overlay[hidden]{
+    display: none !important;
+}
