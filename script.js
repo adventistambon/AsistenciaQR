@@ -576,6 +576,9 @@
   }
   function closeSettings() {
     dom.settingsOverlay.hidden = true;
+     console.log("cerrando");
+
+    dom.settingsOverlay.remove();
   }
   async function saveSettings() {
     const sheetId = dom.cfgSheetId.value.trim();
