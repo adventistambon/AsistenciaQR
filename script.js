@@ -125,6 +125,7 @@
       dom.lastUpdated.textContent = `Última lectura: ${formatClock(new Date())}`;
       populateSchoolFilter();
       applyFilters();
+      if(dom.settingsOverlay) dom.settingsOverlay.hidden=true;
     } catch (err) {
       console.error(err);
       setConnStatus("error");
