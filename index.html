@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mesa de Registro · Panel de Colegios</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grain"></div>
+
+<!-- ======================= HEADER / TICKET STRIP ======================= -->
+<header class="masthead">
+  <div class="masthead__top">
+    <div class="masthead__brand">
+      <span class="masthead__mark">⌘</span>
+      <div>
+        <h1 class="masthead__title">Mesa de Registro</h1>
+        <p class="masthead__subtitle">Panel de asistencia por colegio · lectura en vivo de Google Sheets</p>
+      </div>
+    </div>
+
+    <div class="masthead__status">
+      <div class="status-pill" id="connStatus">
+        <span class="status-pill__dot" id="connDot"></span>
+        <span id="connText">Sin conectar</span>
+      </div>
+      <span class="masthead__updated" id="lastUpdated">Última lectura: —</span>
+      <label class="toggle" title="Actualizar automáticamente">
+        <input type="checkbox" id="autoRefreshToggle">
+        <span class="toggle__track"><span class="toggle__thumb"></span></span>
+        <span class="toggle__label">Auto</span>
+      </label>
+      <button class="btn btn--ghost" id="refreshBtn" type="button">↻ Refrescar</button>
+      <button class="btn btn--ghost" id="settingsBtn" type="button">⚙ Fuente</button>
+    </div>
+  </div>
+
+  <div class="perforation" aria-hidden="true"></div>
+
+  <!-- ======================= FILTERS ======================= -->
+  <div class="filters" id="filtersBar">
+    <div class="filters__group">
+      <label for="fDateFrom">Fecha desde</label>
+      <input type="date" id="fDateFrom">
+    </div>
+    <div class="filters__group">
+      <label for="fDateTo">Fecha hasta</label>
+      <input type="date" id="fDateTo">
+    </div>
+    <div class="filters__group">
+      <label for="fTimeFrom">Hora desde</label>
+      <input type="time" id="fTimeFrom">
+    </div>
+    <div class="filters__group">
+      <label for="fTimeTo">Hora hasta</label>
+      <input type="time" id="fTimeTo">
+    </div>
+    <div class="filters__group filters__group--grow">
+      <label for="fColegio">Colegio</label>
+      <select id="fColegio"><option value="">Todos los colegios</option></select>
+    </div>
+    <div class="filters__group filters__group--grow">
+      <label for="fSearch">Buscar código / participante</label>
+      <input type="text" id="fSearch" placeholder="Ej. Simón Bolívar, o SB-2024-001…">
+    </div>
+    <div class="filters__actions">
+      <button class="btn btn--stamp" id="applyFilters" type="button">Aplicar filtros</button>
+      <button class="btn btn--text" id="clearFilters" type="button">Limpiar</button>
+      <button class="btn btn--text" id="exportCsv" type="button">⇩ Exportar CSV</button>
+    </div>
+  </div>
+</header>
+
+<!-- ======================= EMPTY / ERROR STATE ======================= -->
+<div class="banner" id="dataBanner" hidden>
+  <p id="dataBannerText"></p>
+</div>
+
+<main class="dash" id="dashMain" hidden>
+
+  <!-- ======================= KPIs ======================= -->
+  <section class="kpis" aria-label="Indicadores generales">
+    <article class="kpi-card kpi-card--lead">
+      <span class="kpi-card__eyebrow">Colegio líder</span>
+      <strong class="kpi-card__value" id="kpiLeaderSchool">—</strong>
+      <span class="kpi-card__meta" id="kpiLeaderCount">— participantes</span>
+      <span class="kpi-card__seal">1º</span>
+    </article>
+
+    <article class="kpi-card">
+      <span class="kpi-card__eyebrow">Registros totales</span>
+      <strong class="kpi-card__value kpi-card__value--mono" id="kpiTotalRegs">0</strong>
+      <span class="kpi-card__meta">en el periodo filtrado</span>
+    </article>
+
+    <article class="kpi-card">
+      <span class="kpi-card__eyebrow">Participantes únicos</span>
+      <strong class="kpi-card__value kpi-card__value--mono" id="kpiUniqueParticipants">0</strong>
+      <span class="kpi-card__meta">colegio + nombre</span>
+    </article>
+
+    <article class="kpi-card">
+      <span class="kpi-card__eyebrow">Colegios activos</span>
+      <strong class="kpi-card__value kpi-card__value--mono" id="kpiTotalSchools">0</strong>
+      <span class="kpi-card__meta">con al menos 1 registro</span>
+    </article>
+  </section>
+
+  <!-- ======================= CHARTS ======================= -->
+  <section class="charts">
+    <article class="panel panel--wide">
+      <div class="panel__head">
+        <h2>Ranking de colegios por participantes</h2>
+        <span class="panel__hint">Top 10 · periodo filtrado</span>
+      </div>
+      <div class="panel__body">
+        <canvas id="chartRanking"></canvas>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel__head">
+        <h2>Participación por día</h2>
+        <span class="panel__hint">Registros / FECHA</span>
+      </div>
+      <div class="panel__body">
+        <canvas id="chartByDate"></canvas>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel__head">
+        <h2>Distribución por hora</h2>
+        <span class="panel__hint">Horas pico de registro</span>
+      </div>
+      <div class="panel__body">
+        <canvas id="chartByHour"></canvas>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel__head">
+        <h2>Cuota de los 5 colegios principales</h2>
+        <span class="panel__hint">Sobre el total filtrado</span>
+      </div>
+      <div class="panel__body">
+        <canvas id="chartShare"></canvas>
+      </div>
+    </article>
+  </section>
+
+  <!-- ======================= TABLE ======================= -->
+  <section class="panel panel--table">
+    <div class="panel__head">
+      <h2>Bitácora de registros</h2>
+      <span class="panel__hint" id="tableCount">0 filas</span>
+    </div>
+    <div class="table-scroll">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th data-key="codigo">Código</th>
+            <th data-key="colegio">Colegio</th>
+            <th data-key="participante">Participante</th>
+            <th data-key="fechaStr">Fecha</th>
+            <th data-key="horaStr">Hora</th>
+            <th data-key="registro">Registro</th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- ======================= SETTINGS MODAL ======================= -->
+<div class="modal-overlay" id="settingsOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal__head">
+      <h2 id="settingsTitle">Conectar hoja de Google Sheets</h2>
+      <button class="modal__close" id="settingsClose" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal__body">
+      <p class="modal__hint">
+        La hoja debe tener acceso compartido como <strong>"Cualquier persona con el enlace → Lector"</strong>.
+        No se requiere clave de API: se lee mediante el endpoint público de visualización de Google.
+      </p>
+
+      <label for="cfgSheetId">ID de la hoja de cálculo</label>
+      <input type="text" id="cfgSheetId" placeholder="Ej. 1AbCDefGhIjKLmnoPQRstuVWXyz1234567890">
+      <p class="modal__helper">Se encuentra en la URL: docs.google.com/spreadsheets/d/<strong>ESTE_ID</strong>/edit</p>
+
+      <label for="cfgSheetName">Nombre de la pestaña (o GID)</label>
+      <input type="text" id="cfgSheetName" placeholder="Ej. Hoja1  ó  gid:0">
+      <p class="modal__helper">Usa el nombre exacto de la pestaña, o "gid:NÚMERO" tomado de la URL tras #gid=.</p>
+
+      <div class="modal__row">
+        <label for="cfgAutoSeconds">Intervalo de auto-actualización</label>
+        <select id="cfgAutoSeconds">
+          <option value="30">30 segundos</option>
+          <option value="60" selected>1 minuto</option>
+          <option value="300">5 minutos</option>
+          <option value="600">10 minutos</option>
+        </select>
+      </div>
+
+      <p class="modal__error" id="settingsError" hidden></p>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--text" id="settingsCancel" type="button">Cancelar</button>
+      <button class="btn btn--stamp" id="settingsSave" type="button">Guardar y conectar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
