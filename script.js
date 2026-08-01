@@ -575,7 +575,7 @@
     dom.cfgSheetId.focus();
   }
   function closeSettings() {
-    dom.settingsOverlay.hidden = true;
+    dom.settingsOverlay.hidden = false;
      console.log("cerrando");
 
     dom.settingsOverlay.remove();
