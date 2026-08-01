@@ -144,10 +144,19 @@
     };
 
     const out = [];
+    const seenCodigos = new Set();
     (table.rows || []).forEach((row) => {
       const cells = row.c || [];
-      const codigoRaw = cellText(cells[idx.codigo]);
+      const codigoRaw = cellText(cells[idx.codigo]).trim();
+
+      // omitir vacíos
       if (!codigoRaw) return;
+      // omitir códigos puramente numéricos (sin colegio/participante real)
+      if (/^\d+([.,]\d+)?$/.test(codigoRaw)) return;
+      // omitir duplicados (mismo código ya registrado)
+      const codigoKey = codigoRaw.toLowerCase();
+      if (seenCodigos.has(codigoKey)) return;
+      seenCodigos.add(codigoKey);
 
       const fechaRaw = cellText(cells[idx.fecha]);
       const horaRaw = cellText(cells[idx.hora]);
@@ -385,6 +394,11 @@
   }
 
   function renderCharts(agg) {
+    if (typeof Chart === "undefined") {
+      console.error("Chart.js no se cargó (vendor/chart.umd.js). Los gráficos no se mostrarán, pero KPIs y tabla siguen funcionando.");
+      showBanner("Los gráficos no se pudieron cargar porque falta el archivo <strong>vendor/chart.umd.js</strong>. Verifica que la carpeta <strong>vendor</strong> esté junto a index.html. Mientras tanto, los indicadores y la tabla siguen funcionando con normalidad.");
+      return;
+    }
     renderRankingChart(agg.schoolRanking.slice(0, 10));
     renderDateChart(agg.dateSeries);
     renderHourChart(agg.byHour);
